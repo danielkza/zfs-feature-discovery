@@ -1,0 +1,5 @@
+FROM python:3.12-alpine
+
+RUN --mount=type=bind,source=.,target=/src \
+  pip install -e '/src[test]'
+WORKDIR /src
