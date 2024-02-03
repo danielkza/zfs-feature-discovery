@@ -7,6 +7,7 @@ RUN --mount=type=bind,source=.,target=src \
 
 FROM python:3.12-alpine
 
+LABEL org.opencontainers.image.source=https://github.com/danielkza/zfs-feature-discovery
 COPY --from=builder /build/wheels /tmp/wheels
 RUN pip install --find-links /tmp/wheels --no-index zfs_feature_discovery
 
