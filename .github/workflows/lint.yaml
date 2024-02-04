@@ -1,8 +1,7 @@
 name: lint
 on:
   pull_request:
-    types:
-      - synchronize
+    types: [opened, synchronize]
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
