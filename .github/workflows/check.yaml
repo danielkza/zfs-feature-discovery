@@ -13,5 +13,10 @@ jobs:
         with:
           python-version: '3.12'
 
+      - run: pip install -e '.[test]'
+
       - name: Pre-commit
         uses: cloudposse/github-action-pre-commit@v2.1.2
+
+      - name: test
+        run: pytest
