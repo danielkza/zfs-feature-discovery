@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import os
 from pathlib import Path
 from typing import (
@@ -13,7 +11,6 @@ from typing import (
     Type,
     cast,
 )
-from typing_extensions import get_args, get_origin
 
 from pydantic import BaseModel, BeforeValidator, Field, field_validator
 from pydantic.fields import FieldInfo
@@ -23,7 +20,7 @@ from pydantic_settings import (
     PydanticBaseSettingsSource,
     SettingsConfigDict,
 )
-
+from typing_extensions import get_args, get_origin
 
 ZPOOL_DEFAULT_PROPS = frozenset(
     [
