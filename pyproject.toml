@@ -11,6 +11,7 @@ dependencies = [
     "pydantic>=2.6",
     "pydantic-settings",
     "aiofiles",
+    "aioitertools",
 ]
 requires-python = ">=3.12"
 readme = "README.md"
@@ -20,7 +21,9 @@ dynamic = ['version', 'description']
 [project.optional-dependencies]
 test = [
     "ruff",
-	"pytest>=8.0.0",
+	"pytest<8.0.0",
+    "pytest-mock",
+    "pytest-asyncio",
 ]
 
 [project.urls]

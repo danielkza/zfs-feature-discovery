@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import re
 from pathlib import Path
@@ -13,7 +15,7 @@ from typing import (
     cast,
 )
 
-from pydantic import AfterValidator, BeforeValidator, FilePath, field_validator
+from pydantic import BeforeValidator, field_validator
 from pydantic.fields import FieldInfo
 from pydantic_settings import (
     BaseSettings,
@@ -35,7 +37,6 @@ ZPOOL_DEFAULT_PROPS = frozenset(
         "readonly",
         "size",
         "version",
-        "feature@",
     ]
 )
 
@@ -62,22 +63,18 @@ ZFS_DATASET_DEFAULT_PROPS = frozenset(
 )
 
 
-def check_absolute(path: FilePath) -> FilePath:
+def check_absolute(path: Path) -> Path:
     if not path.is_absolute():
         raise ValueError(f"Path must be absolute: {path}")
 
     return path
 
 
-def check_executable(path: FilePath) -> FilePath:
+def check_executable(path: Path) -> Path:
     if not os.access(str(path), os.X_OK):
         raise ValueError(f"Path must be executable: {path}")
 
     return path
-
-
-AbsolutePath = Annotated[FilePath, AfterValidator(check_absolute)]
-ExecutableBinaryPath = Annotated[AbsolutePath, AfterValidator(check_executable)]
 
 
 def parse_props_list(value: Any) -> Collection[str]:
@@ -101,7 +98,6 @@ def prepare_props_list(
         props = set(defaults)
 
     for user_prop in value:
-        print(props)
         remove_prop = user_prop.lstrip("-")
         if remove_prop != user_prop:
             # Already handled earlier
@@ -130,12 +126,14 @@ class SettingsSource(EnvSettingsSource):
 class Config(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="ZFS_FEATURE_DISCOVERY_")
 
-    zfs_binary: ExecutableBinaryPath = Path("/usr/sbin/zfs")
-    zpool_binary: ExecutableBinaryPath = Path("/usr/sbin/zpool")
+    zfs_binary: Path = Path("/usr/sbin/zfs")
+    zpool_binary: Path = Path("/usr/sbin/zpool")
     zpool_filters: Sequence[re.Pattern] = (re.compile(r".+"),)
 
     zpool_props: PropsSet = PropsSet(frozenset())
     zfs_dataset_props: PropsSet = PropsSet(frozenset())
+
+    feature_dir: Path = Path("/etc/kubernetes/node-feature-discovery/features.d/")
 
     @classmethod
     def settings_customise_sources(
