@@ -12,6 +12,8 @@ dependencies = [
     "pydantic-settings",
     "aiofiles",
     "aioitertools",
+    "argdantic",
+    "pyyaml"
 ]
 requires-python = ">=3.12"
 readme = "README.md"

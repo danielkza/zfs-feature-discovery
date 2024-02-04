@@ -1,21 +1,21 @@
 from __future__ import annotations
 
 import os
-import re
 from pathlib import Path
 from typing import (
     Annotated,
     Any,
     Collection,
+    Dict,
     FrozenSet,
     NewType,
-    Sequence,
     Tuple,
     Type,
     cast,
 )
+from typing_extensions import get_args, get_origin
 
-from pydantic import BeforeValidator, field_validator
+from pydantic import BaseModel, BeforeValidator, Field, field_validator
 from pydantic.fields import FieldInfo
 from pydantic_settings import (
     BaseSettings,
@@ -117,23 +117,37 @@ class SettingsSource(EnvSettingsSource):
         import pdb
 
         pdb.set_trace()
-        if field.metadata != PropsSet:
-            return super().decode_complex_value(field_name, field, value)
+        origin = get_origin(field.annotation)
+        if origin and issubclass(origin, Collection):
+            args = get_args(field.annotation)
+            if args == (str,):
+                return parse_props_list(value)
 
-        return parse_props_list(value)
+        return super().decode_complex_value(field_name, field, value)
+
+
+class LabelConfig(BaseModel):
+    namespace: str = "feature.node.kubernetes.io"
+    zpool_format: str = "zpool/{pool_name}.{property_name}"
+    zfs_dataset_format: str = "zfs-dataset/{pool_name}/{dataset_name}.{property_name}"
 
 
 class Config(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="ZFS_FEATURE_DISCOVERY_")
+    model_config = SettingsConfigDict(
+        env_prefix="ZFS_FEATURE_DISCOVERY_", env_nested_delimiter="_"
+    )
 
-    zfs_binary: Path = Path("/usr/sbin/zfs")
-    zpool_binary: Path = Path("/usr/sbin/zpool")
-    zpool_filters: Sequence[re.Pattern] = (re.compile(r".+"),)
+    zfs_command: Path = Path("/usr/sbin/zfs")
+    zpool_command: Path = Path("/usr/sbin/zpool")
+
+    zpools: Dict[str, FrozenSet[str]] = Field(default_factory=dict, min_length=1)
 
     zpool_props: PropsSet = PropsSet(frozenset())
     zfs_dataset_props: PropsSet = PropsSet(frozenset())
 
     feature_dir: Path = Path("/etc/kubernetes/node-feature-discovery/features.d/")
+
+    label: LabelConfig = Field(default_factory=LabelConfig)
 
     @classmethod
     def settings_customise_sources(

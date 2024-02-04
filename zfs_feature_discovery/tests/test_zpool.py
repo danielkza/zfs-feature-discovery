@@ -100,6 +100,8 @@ def feature_manager(tmp_path_factory: TempPathFactory):
         zpool_props=ZPOOL_TEST_PROPS,
         zfs_dataset_props=ZFS_DATASET_TEST_PROPS,
         label_namespace="me.danielkza.io/test",
+        zpool_label_format="zpool/{pool_name}.{property_name}",
+        zfs_dataset_label_format="zfs-dataset/{pool_name}/{dataset_name}.{property_name}",
     )
     return fm
 
@@ -143,9 +145,6 @@ async def test_zfs_dataset_write_features(
         await feature_manager.refresh_zpool_datasets(zpool)
 
     all_labels = await read_all_labels(feature_manager.feature_dir)
-    import pdb
-
-    pdb.set_trace()
     assert all_labels == {
         "me.danielkza.io/test/zfs-dataset/rpool/test1.readonly": "off",
         "me.danielkza.io/test/zfs-dataset/rpool/test1.volsize": "",
