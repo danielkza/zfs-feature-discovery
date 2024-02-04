@@ -8,11 +8,10 @@ authors = [
     {name = "Daniel Miranda", email = "me@danielkza.io"},
 ]
 dependencies = [
-    "flit_core >=3.9.0",
-    "requests",
-    "docutils",
-    "tomli-w",
-    "pip",
+    "pydantic>=2.6",
+    "pydantic-settings",
+    "aiofiles",
+    "aioitertools",
 ]
 requires-python = ">=3.12"
 readme = "README.md"
@@ -21,7 +20,10 @@ dynamic = ['version', 'description']
 
 [project.optional-dependencies]
 test = [
-	"pytest>=8.0.0",
+    "ruff",
+	"pytest<8.0.0",
+    "pytest-mock",
+    "pytest-asyncio",
 ]
 
 [project.urls]
@@ -30,4 +32,4 @@ Source = "https://github.com/danielkza/zfs-feature-discovery"
 Changelog = "https://github.com/danielkza/zfs-feature-discovery/blob/develop/CHANGELOG.md"
 
 [project.scripts]
-flit = "zfs_feature_discovery:main"
+zfs-feature-discovery = "zfs_feature_discovery.cli:main"
