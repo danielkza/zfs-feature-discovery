@@ -44,7 +44,7 @@ def test_cli_config_load_path_from_env(
 async def test_cli_sleep_interval(mock_feature_manager: MagicMock) -> None:
     try:
         async with asyncio.timeout(0.25):
-            await run(interval=0.1)
+            await run(sleep_interval=0.1)
     except asyncio.TimeoutError:
         pass
 

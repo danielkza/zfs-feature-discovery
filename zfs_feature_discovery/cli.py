@@ -59,20 +59,18 @@ def settings_source(cls: Type[BaseSettings], **kwargs: Any) -> SettingsSource:
 
 async def run(
     oneshot: bool = False,
-    interval: float = 60,
+    sleep_interval: float = 60,
     config_path: Path | None = None,
     log_level: Optional[Literal["ERROR", "WARNING", "INFO", "DEBUG", "TRACE"]] = None,
 ) -> None:
-    logging.basicConfig(level=log_level)
+    logging.basicConfig(level=log_level or "INFO")
 
     config = await load_config(config_path=config_path)
     logging.debug(f"Config: {config}")
 
     async with FeatureManager.from_config(config) as fm:
         for pool, datasets in config.zpools.items():
-            logging.info(
-                f"Monitoring zpool {pool} with datasets: {", ".join(datasets)}"
-            )
+            logging.info(f"Monitoring zpool {pool} with datasets: {datasets}")
             zpool = ZpoolManager(
                 pool_name=pool,
                 datasets=datasets,
@@ -85,7 +83,7 @@ async def run(
             await fm.refresh()
         else:
             while True:
-                await asyncio.gather(fm.refresh(), asyncio.sleep(interval))
+                await asyncio.gather(fm.refresh(), asyncio.sleep(sleep_interval))
 
 
 main.command(sources=[settings_source])(async_cmd(run))
