@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from functools import wraps
 from pathlib import Path
 from typing import (
@@ -21,6 +22,8 @@ from pydantic_settings import BaseSettings
 from zfs_feature_discovery.config import Config, SettingsSource
 from zfs_feature_discovery.features import FeatureManager
 from zfs_feature_discovery.zpool import ZpoolManager
+
+log = logging.getLogger(__name__)
 
 main = ArgParser()
 
@@ -83,7 +86,15 @@ async def run(
             await fm.refresh()
         else:
             while True:
-                await asyncio.gather(fm.refresh(), asyncio.sleep(sleep_interval))
+                log.info(f"Refreshing features at {time.time()}")
+                wait = asyncio.create_task(asyncio.sleep(sleep_interval))
+
+                try:
+                    await asyncio.gather(wait, fm.refresh())
+                except Exception:
+                    logging.exception("Failed to refresh features")
+
+                await wait
 
 
 main.command(sources=[settings_source])(async_cmd(run))
