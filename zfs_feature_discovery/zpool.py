@@ -1,13 +1,10 @@
-from __future__ import annotations
 import logging
-
 from pathlib import Path
 from typing import AsyncIterable, Collection, Mapping
 
 from aioitertools.itertools import groupby
 
 from zfs_feature_discovery.zfs_props import ZfsCommandHarness, ZfsProperty
-
 
 log = logging.getLogger(__name__)
 
@@ -33,7 +30,7 @@ class ZpoolManager:
         )
 
     @property
-    def full_datasets(self):
+    def full_datasets(self) -> frozenset[str]:
         return frozenset([f"{self.pool_name}/{ds}" for ds in self.datasets])
 
     async def get_properties(self) -> Mapping[str, ZfsProperty]:
@@ -46,14 +43,15 @@ class ZpoolManager:
     async def dataset_properties(
         self,
     ) -> AsyncIterable[tuple[str, Mapping[str, ZfsProperty]]]:
-        props, exit_fut = await self._zfs_cmd.get_properties()
+        all_props, exit_fut = await self._zfs_cmd.get_properties()
 
         prefix = f"{self.pool_name}/"
-        async for dataset, props in groupby(props, lambda prop: prop.dataset):
+        async for dataset, props in groupby(all_props, lambda prop: prop.dataset):
             relative_dataset = dataset.removeprefix(prefix)
             if relative_dataset == dataset:
                 log.warning(
-                    f"Received unexpected dataset {dataset} outside of {prefix}, skipping"
+                    f"Received unexpected dataset {dataset} outside of {prefix}, "
+                    f"skipping"
                 )
                 continue
 

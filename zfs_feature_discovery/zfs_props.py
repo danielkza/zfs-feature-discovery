@@ -1,11 +1,8 @@
-from __future__ import annotations
-
 import asyncio
 import asyncio.subprocess as subprocess
 import logging
 from asyncio import StreamReader
-from typing import AsyncIterable, AsyncIterator, Literal, NamedTuple, Sequence
-
+from typing import AsyncIterable, AsyncIterator, Literal, NamedTuple, Sequence, cast
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +16,7 @@ class ZfsProperty(NamedTuple):
     source: Source | None
 
     @classmethod
-    def parse(cls, value: str) -> ZfsProperty:
+    def parse(cls, value: str) -> "ZfsProperty":
         ds, name, prop_value, source = value.split("\t")
 
         if source in ("default", "local", "inherited", "temporary", "received"):
@@ -27,7 +24,9 @@ class ZfsProperty(NamedTuple):
         else:
             prop_source = None
 
-        return cls(dataset=ds, name=name, value=prop_value, source=prop_source)
+        return cls(
+            dataset=ds, name=name, value=prop_value, source=cast(Source, prop_source)
+        )
 
 
 class ZfsCommandHarness:
@@ -39,12 +38,12 @@ class ZfsCommandHarness:
         cls, stream: StreamReader
     ) -> AsyncIterator[ZfsProperty]:
         while True:
-            line = await stream.readline()
+            line = (await stream.readline()).decode()
             if not line:
                 break
 
             try:
-                prop = ZfsProperty.parse(line.decode().rstrip())
+                prop = ZfsProperty.parse(line.rstrip())
             except ValueError:
                 log.warning(f"Failed to parse zpool line, ignoring: {line}")
                 continue

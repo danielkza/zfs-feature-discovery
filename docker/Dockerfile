@@ -11,3 +11,4 @@ LABEL org.opencontainers.image.source=https://github.com/danielkza/zfs-feature-d
 COPY --from=builder /build/wheels /tmp/wheels
 RUN pip install --find-links /tmp/wheels --no-index zfs_feature_discovery
 
+CMD ["zfs-feature-discovery"]

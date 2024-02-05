@@ -3,8 +3,8 @@ from typing import List
 
 import pytest
 from pytest import TempPathFactory
-from zfs_feature_discovery.features import FeatureManager
 
+from zfs_feature_discovery.features import FeatureManager
 from zfs_feature_discovery.zpool import ZpoolManager
 
 from .conftest import ZfsCommandMocker, read_all_labels
@@ -79,7 +79,7 @@ def mock_zfs_dataset_properties(
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("mock_zpool_properties")
-async def test_zpool_get_properties(zpool: ZpoolManager):
+async def test_zpool_get_properties(zpool: ZpoolManager) -> None:
     props = await zpool.get_properties()
     assert props != {}
 
@@ -94,12 +94,14 @@ ZFS_DATASET_TEST_PROPS = frozenset(
 
 
 @pytest.fixture(scope="function")
-def feature_manager(tmp_path_factory: TempPathFactory):
+def feature_manager(tmp_path_factory: TempPathFactory) -> FeatureManager:
     fm = FeatureManager(
         feature_dir=tmp_path_factory.mktemp("features-"),
         zpool_props=ZPOOL_TEST_PROPS,
         zfs_dataset_props=ZFS_DATASET_TEST_PROPS,
         label_namespace="me.danielkza.io/test",
+        zpool_label_format="zpool/{pool_name}.{property_name}",
+        zfs_dataset_label_format="zfs-dataset/{pool_name}/{dataset_name}.{property_name}",
     )
     return fm
 
@@ -108,11 +110,11 @@ def feature_manager(tmp_path_factory: TempPathFactory):
 @pytest.mark.usefixtures("mock_zpool_properties")
 async def test_zpool_write_features(
     feature_manager: FeatureManager, zpool: ZpoolManager
-):
+) -> None:
     async with feature_manager:
         feature_manager.register_zpool(zpool)
 
-        await feature_manager.refresh_zpools()
+        await feature_manager.refresh_all_zpools()
 
     all_labels = await read_all_labels(feature_manager.feature_dir)
     assert all_labels == {
@@ -126,7 +128,7 @@ async def test_zpool_write_features(
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("mock_zfs_dataset_properties")
-async def test_zfs_dataset_get_properties(zpool: ZpoolManager):
+async def test_zfs_dataset_get_properties(zpool: ZpoolManager) -> None:
     ds_props = {ds: props async for ds, props in zpool.dataset_properties()}
     for ds in zpool.full_datasets:
         assert ds_props[ds] != {}
@@ -136,16 +138,13 @@ async def test_zfs_dataset_get_properties(zpool: ZpoolManager):
 @pytest.mark.usefixtures("mock_zfs_dataset_properties")
 async def test_zfs_dataset_write_features(
     feature_manager: FeatureManager, zpool: ZpoolManager
-):
+) -> None:
     async with feature_manager:
         feature_manager.register_zpool(zpool)
 
         await feature_manager.refresh_zpool_datasets(zpool)
 
     all_labels = await read_all_labels(feature_manager.feature_dir)
-    import pdb
-
-    pdb.set_trace()
     assert all_labels == {
         "me.danielkza.io/test/zfs-dataset/rpool/test1.readonly": "off",
         "me.danielkza.io/test/zfs-dataset/rpool/test1.volsize": "",

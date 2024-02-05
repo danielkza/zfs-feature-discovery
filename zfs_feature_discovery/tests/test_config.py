@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from pytest import MonkeyPatch
 
@@ -17,11 +19,16 @@ from zfs_feature_discovery.config import (
         ("-all,test", ["test"]),
     ],
 )
-def test_config_zpool_props(monkeypatch: MonkeyPatch, env_value, result):
+def test_config_zpool_props(
+    monkeypatch: MonkeyPatch,
+    config_defaults: dict[str, Any],
+    env_value: str,
+    result: list[str],
+) -> None:
     if env_value is not None:
         monkeypatch.setenv("ZFS_FEATURE_DISCOVERY_ZPOOL_PROPS", env_value)
 
-    config = Config()
+    config = Config.model_validate(config_defaults)
     assert set(config.zpool_props) == set(result)
 
 
@@ -34,9 +41,14 @@ def test_config_zpool_props(monkeypatch: MonkeyPatch, env_value, result):
         ("-all,test", ["test"]),
     ],
 )
-def test_config_zfs_dataset_props(monkeypatch: MonkeyPatch, env_value, result):
+def test_config_zfs_dataset_props(
+    monkeypatch: MonkeyPatch,
+    config_defaults: dict[str, Any],
+    env_value: str,
+    result: list[str],
+) -> None:
     if env_value is not None:
         monkeypatch.setenv("ZFS_FEATURE_DISCOVERY_ZFS_DATASET_PROPS", env_value)
 
-    config = Config()
+    config = Config.model_validate(config_defaults)
     assert set(config.zfs_dataset_props) == set(result)

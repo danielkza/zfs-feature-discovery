@@ -12,6 +12,8 @@ dependencies = [
     "pydantic-settings",
     "aiofiles",
     "aioitertools",
+    "argdantic",
+    "pyyaml"
 ]
 requires-python = ">=3.12"
 readme = "README.md"
@@ -24,6 +26,9 @@ test = [
 	"pytest<8.0.0",
     "pytest-mock",
     "pytest-asyncio",
+    "mypy",
+    "types-aiofiles",
+    "types-pyyaml",
 ]
 
 [project.urls]
@@ -33,3 +38,8 @@ Changelog = "https://github.com/danielkza/zfs-feature-discovery/blob/develop/CHA
 
 [project.scripts]
 zfs-feature-discovery = "zfs_feature_discovery.cli:main"
+
+[tool.ruff]
+line-length = 88
+# pyflakes, pycodestyle, isort
+select = ["F", "E", "W", "I001"]
