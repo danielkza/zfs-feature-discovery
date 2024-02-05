@@ -155,6 +155,7 @@ class LabelConfig(BaseModel):
     zfs_dataset_format: str = Field(
         default="zfs.{pool_name}.{dataset_name}.{property_name}"
     )
+    global_format: str = Field(default="zfs-global.{property_name}")
 
     @field_validator("zpool_format")
     @classmethod
@@ -168,6 +169,11 @@ class LabelConfig(BaseModel):
             value, {"pool_name", "dataset_name", "property_name"}
         )
 
+    @field_validator("global_format")
+    @classmethod
+    def validate_global_props(cls, value: str) -> str:
+        return validate_label_format(value, {"property_name"})
+
 
 class Config(BaseSettings):
     model_config = SettingsConfigDict(
@@ -176,6 +182,7 @@ class Config(BaseSettings):
 
     zfs_command: Path = Path("/usr/sbin/zfs")
     zpool_command: Path = Path("/usr/sbin/zpool")
+    hostid_command: Path = Path("/usr/bin/hostid")
 
     zpools: Dict[str, FrozenSet[str]] = Field(default_factory=dict, min_length=1)
 

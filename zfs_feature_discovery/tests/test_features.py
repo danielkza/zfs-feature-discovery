@@ -6,9 +6,10 @@ import pytest
 from pytest import TempPathFactory
 
 from zfs_feature_discovery.features import FeatureManager
+from zfs_feature_discovery.zfs_globals import ZfsGlobals
 from zfs_feature_discovery.zpool import ZpoolManager
 
-from .conftest import read_all_labels
+from .conftest import CommandMocker, read_all_labels
 
 
 @pytest.fixture(scope="function")
@@ -16,6 +17,7 @@ def feature_manager(
     tmp_path_factory: TempPathFactory,
     zpool_test_props: frozenset[str],
     zfs_dataset_test_props: frozenset[str],
+    zfs_globals: ZfsGlobals,
 ) -> FeatureManager:
     fm = FeatureManager(
         feature_dir=tmp_path_factory.mktemp("features-"),
@@ -24,6 +26,8 @@ def feature_manager(
         label_namespace="me.danielkza.io",
         zpool_label_format="zpool.{pool_name}.{property_name}",
         zfs_dataset_label_format="zfs.{pool_name}.{dataset_name}.{property_name}",
+        global_label_format="zfs-global.{property_name}",
+        zfs_globals=zfs_globals,
     )
     return fm
 
@@ -104,6 +108,7 @@ async def test_zpool_no_datasets_write_features(
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("mock_zpool_properties")
+@pytest.mark.usefixtures("mock_zfs_global_properties")
 @pytest.mark.parametrize("zpool_datasets", [[]])
 async def test_features_cleanup(
     feature_manager: FeatureManager, zpool: ZpoolManager
@@ -136,11 +141,15 @@ rubbish=rubbish
             "me.danielkza.io/zpool.rpool.health": "ONLINE",
             "me.danielkza.io/zpool.rpool.guid": "2706753758230323468",
             "me.danielkza.io/zpool.rpool.feature_async_destroy": "enabled",
+            "me.danielkza.io/zfs-global.ver": "2.2.2-1",
+            "me.danielkza.io/zfs-global.kver": "2.2.2-1",
+            "me.danielkza.io/zfs-global.hostid": "00fac711",
         }
 
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("mock_zpool_properties")
+@pytest.mark.usefixtures("mock_zfs_global_properties")
 @pytest.mark.parametrize("zpool_datasets", [[]])
 async def test_features_file_mode(
     feature_manager: FeatureManager, zpool: ZpoolManager
@@ -159,3 +168,41 @@ async def test_features_file_mode(
             assert file_mode == 0o0644, f"File {entry.path} should have mode 0644"
 
         assert found, "FeatureManager should generate files"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("zpool_datasets", [[]])
+async def test_zfs_missing(
+    feature_manager: FeatureManager,
+    command_mocker: CommandMocker,
+    zfs_globals: ZfsGlobals,
+    zpool: ZpoolManager,
+) -> None:
+    command_mocker.mock(
+        zfs_globals._zfs_version_cmd,
+        stderr="zfs: command not found\n".encode(),
+        exit_code=127,
+    )
+
+    command_mocker.mock(
+        zfs_globals._hostid_cmd,
+        stdout="hostid: command not found\n".encode(),
+        exit_code=127,
+    )
+
+    async with feature_manager:
+        feature_manager.register_zpool(zpool)
+
+        await feature_manager.refresh()
+
+    all_labels = await read_all_labels(feature_manager.feature_dir)
+    assert all_labels == {
+        "me.danielkza.io/zpool.rpool.readonly": "",
+        "me.danielkza.io/zpool.rpool.size": "",
+        "me.danielkza.io/zpool.rpool.health": "",
+        "me.danielkza.io/zpool.rpool.guid": "",
+        "me.danielkza.io/zpool.rpool.feature_async_destroy": "",
+        "me.danielkza.io/zfs-global.ver": "",
+        "me.danielkza.io/zfs-global.kver": "",
+        "me.danielkza.io/zfs-global.hostid": "",
+    }

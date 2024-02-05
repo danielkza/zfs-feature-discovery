@@ -2,8 +2,8 @@ import asyncio
 import asyncio.subprocess as subprocess
 from asyncio.subprocess import Process
 from pathlib import Path
-from typing import Any, AsyncIterable, Generator, Optional, Sequence, cast
-from unittest.mock import MagicMock, Mock
+from typing import Any, AsyncIterable, Generator, Optional, Sequence
+from unittest.mock import ANY, AsyncMock, MagicMock, Mock
 
 import aiofiles
 import pytest
@@ -13,7 +13,8 @@ from pytest_mock import MockerFixture
 
 from zfs_feature_discovery.config import Config
 from zfs_feature_discovery.features import FeatureManager
-from zfs_feature_discovery.zfs_props import ZfsCommandHarness
+from zfs_feature_discovery.zfs_globals import ZfsGlobals
+from zfs_feature_discovery.zfs_props import CommandHarness
 from zfs_feature_discovery.zpool import ZpoolManager
 
 TEST_DATA_DIR = Path(__file__).resolve().parent / "fixtures"
@@ -49,8 +50,9 @@ async def run_mock_process(
         return proc
 
 
-class ZfsCommandMocker:
+class CommandMocker:
     _mock: Optional[Mock]
+    _cmd_expected: Any
 
     def __init__(self, mocker: MockerFixture) -> None:
         self._mocker = mocker
@@ -58,24 +60,25 @@ class ZfsCommandMocker:
 
     def mock(
         self,
-        obj: ZfsCommandHarness,
-        cmd: Sequence[str],
+        obj: CommandHarness,
+        cmd: Optional[Sequence[str]] = None,
         stdout: bytes = b"",
         stderr: bytes = b"",
         exit_code: int = 0,
         delay: float = 0,
     ) -> None:
-        cmd_expected = cmd
+        cmd_expected = self._cmd_expected = cmd or ANY
 
         async def _run(cmd: Sequence[str]) -> Process:
-            assert cmd == cmd_expected
+            if cmd_expected is not ANY:
+                assert cmd == cmd_expected
             return await run_mock_process(stdout, stderr, exit_code, delay)
 
         self._mock = self._mocker.patch.object(obj, "_run", side_effect=_run)
 
     def check_called(self) -> None:
         assert self._mock
-        self._mock.assert_called_once()
+        self._mock.assert_called_once_with(self._cmd_expected)
 
     def check_not_called(self) -> None:
         assert self._mock
@@ -144,11 +147,10 @@ def zfs_get_output() -> bytes:
 
 @pytest.fixture
 def mock_zpool_properties(
-    zpool: ZpoolManager, zfs_command_mocker: ZfsCommandMocker, zpool_get_output: bytes
+    zpool: ZpoolManager, command_mocker: CommandMocker, zpool_get_output: bytes
 ) -> None:
-    zfs_command_mocker.mock(
+    command_mocker.mock(
         zpool._zpool_cmd,
-        cmd=["/zpool_test", "get", "-Hp", "all", zpool.pool_name],
         stdout=zpool_get_output,
         stderr=b"hello",
         exit_code=0,
@@ -157,24 +159,23 @@ def mock_zpool_properties(
 
 @pytest.fixture
 def mock_zfs_dataset_properties(
-    zpool: ZpoolManager, zfs_command_mocker: ZfsCommandMocker, zfs_get_output: bytes
+    zpool: ZpoolManager, command_mocker: CommandMocker, zfs_get_output: bytes
 ) -> Generator[ZpoolManager, None, None]:
-    zfs_command_mocker.mock(
+    command_mocker.mock(
         zpool._zfs_cmd,
-        cmd=["/zfs_test", "get", "-Hp", "all", *zpool.full_datasets],
         stdout=zfs_get_output,
         stderr=b"hello",
         exit_code=0,
     )
     yield zpool
-    zfs_command_mocker.check_called()
+    command_mocker.check_called()
 
 
 @pytest.fixture
-def zfs_command_mocker(
+def command_mocker(
     mocker: MockerFixture,
-) -> Generator[ZfsCommandMocker, None, None]:
-    m = ZfsCommandMocker(mocker)
+) -> Generator[CommandMocker, None, None]:
+    m = CommandMocker(mocker)
     yield m
 
 
@@ -211,12 +212,56 @@ def mock_default_config(mocker: MockerFixture, config_defaults: dict[str, Any]) 
 
 @pytest.fixture
 def mock_feature_manager(mocker: MockerFixture) -> MagicMock:
-    fm_mock = cast(MagicMock, mocker.MagicMock())
-    fm_mock.__aenter__ = mocker.AsyncMock(return_value=fm_mock)
-    fm_mock.refresh = mocker.AsyncMock()
+    fm_mock = MagicMock()
+    fm_mock.__aenter__ = AsyncMock(return_value=fm_mock)
+    fm_mock.refresh = AsyncMock()
 
-    def from_config(config: Config) -> Any:
+    def from_config(_: Config) -> Any:
         return fm_mock
 
     mocker.patch.object(FeatureManager, "from_config", side_effect=from_config)
     return fm_mock
+
+
+@pytest.fixture
+def zfs_globals() -> ZfsGlobals:
+    return ZfsGlobals(
+        zfs_command=Path("/zfs_test"),
+        hostid_command=Path("/hostid_test"),
+    )
+
+
+@pytest.fixture
+def zfs_version_output() -> bytes:
+    return """
+zfs-2.2.2-1
+zfs-kmod-2.2.2-1
+""".lstrip().encode()
+
+
+@pytest.fixture
+def hostid_output() -> bytes:
+    return """
+00fac711
+""".lstrip().encode()
+
+
+@pytest.fixture
+def mock_zfs_global_properties(
+    mocker: MockerFixture,
+    zfs_globals: ZfsGlobals,
+    command_mocker: CommandMocker,
+    zfs_version_output: bytes,
+    hostid_output: bytes,
+) -> None:
+    command_mocker.mock(
+        zfs_globals._zfs_version_cmd,
+        stdout=zfs_version_output,
+        exit_code=0,
+    )
+
+    command_mocker.mock(
+        zfs_globals._hostid_cmd,
+        stdout=hostid_output,
+        exit_code=0,
+    )
