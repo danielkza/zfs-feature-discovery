@@ -2,6 +2,7 @@ import asyncio
 import asyncio.subprocess as subprocess
 import logging
 from asyncio import StreamReader
+from subprocess import CalledProcessError
 from typing import AsyncIterable, AsyncIterator, Literal, NamedTuple, Sequence, cast
 
 log = logging.getLogger(__name__)
@@ -29,26 +30,18 @@ class ZfsProperty(NamedTuple):
         )
 
 
-class ZfsCommandHarness:
+class CommandHarness:
     def __init__(self, command: str, *args: str) -> None:
         self.command = [command, *args]
 
-    @classmethod
-    async def stream_properties(
-        cls, stream: StreamReader
-    ) -> AsyncIterator[ZfsProperty]:
+    async def handle_stdout(self, proc: subprocess.Process) -> AsyncIterable[str]:
+        assert proc.stdout
         while True:
-            line = (await stream.readline()).decode()
+            line = (await proc.stdout.readline()).decode()
             if not line:
                 break
 
-            try:
-                prop = ZfsProperty.parse(line.rstrip())
-            except ValueError:
-                log.warning(f"Failed to parse zpool line, ignoring: {line}")
-                continue
-
-            yield prop
+            yield line
 
     async def handle_stderr(self, proc: subprocess.Process) -> int:
         cmd_name = self.command[0]
@@ -71,6 +64,47 @@ class ZfsCommandHarness:
         return await subprocess.create_subprocess_exec(
             *cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
+
+    async def stream_output(
+        self, *args: str
+    ) -> tuple[AsyncIterable[str], asyncio.Future[int]]:
+        cmd = [*self.command, *args]
+        proc = await self._run(cmd)
+
+        assert proc.stdout
+        fut = asyncio.create_task(self.handle_stderr(proc))
+
+        return self.handle_stdout(proc), fut
+
+    async def check_output(self, *args: str) -> str:
+        stream, fut = await self.stream_output(*args)
+        lines = [line async for line in stream]
+        output = "".join(lines)
+
+        exit_code = await fut
+        if exit_code != 0:
+            raise CalledProcessError(exit_code, self.command[0], output=output)
+
+        return output
+
+
+class ZfsCommandHarness(CommandHarness):
+    @classmethod
+    async def stream_properties(
+        cls, stream: StreamReader
+    ) -> AsyncIterator[ZfsProperty]:
+        while True:
+            line = (await stream.readline()).decode()
+            if not line:
+                break
+
+            try:
+                prop = ZfsProperty.parse(line.rstrip())
+            except ValueError:
+                log.warning(f"Failed to parse zpool line, ignoring: {line}")
+                continue
+
+            yield prop
 
     async def get_properties(
         self, *args: str

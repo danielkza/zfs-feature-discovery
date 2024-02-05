@@ -1,10 +1,13 @@
 import logging
 from pathlib import Path
-from typing import AsyncIterable, Collection, Mapping
+from typing import Collection, Mapping, Optional
 
 from aioitertools.itertools import groupby
 
-from zfs_feature_discovery.zfs_props import ZfsCommandHarness, ZfsProperty
+from zfs_feature_discovery.zfs_props import (
+    ZfsCommandHarness,
+    ZfsProperty,
+)
 
 log = logging.getLogger(__name__)
 
@@ -26,29 +29,47 @@ class ZpoolManager:
         )
 
         self._zfs_cmd = ZfsCommandHarness(
-            str(zfs_command), "get", "-Hp", "all", *self.full_datasets
+            str(zfs_command),
+            "get",
+            "-Hp",
+            "all",
         )
 
     @property
     def full_datasets(self) -> frozenset[str]:
         return frozenset([f"{self.pool_name}/{ds}" for ds in self.datasets])
 
-    async def get_properties(self) -> Mapping[str, ZfsProperty]:
-        props, exit_fut = await self._zpool_cmd.get_properties()
+    async def get_properties(self) -> Optional[Mapping[str, ZfsProperty]]:
+        try:
+            props, exit_fut = await self._zpool_cmd.get_properties()
+        except OSError:
+            log.warning("Failed to run zpool")
+            return None
+
         prop_map = {prop.name: prop async for prop in props}
 
-        await exit_fut
+        exit_code = await exit_fut
+        if exit_code != 0:
+            return None
+
         return prop_map
 
     async def dataset_properties(
         self,
-    ) -> AsyncIterable[tuple[str, Mapping[str, ZfsProperty]]]:
+    ) -> Mapping[str, Mapping[str, ZfsProperty]]:
         if not self.datasets:
-            return
+            return {}
 
-        all_props, exit_fut = await self._zfs_cmd.get_properties()
+        try:
+            all_props, exit_fut = await self._zfs_cmd.get_properties(
+                *self.full_datasets
+            )
+        except OSError:
+            log.warning("Failed to run zfs")
+            return {ds: {} for ds in self.full_datasets}
 
         prefix = f"{self.pool_name}/"
+        result: dict[str, Mapping[str, ZfsProperty]] = {}
         async for dataset, props in groupby(all_props, lambda prop: prop.dataset):
             relative_dataset = dataset.removeprefix(prefix)
             if relative_dataset == dataset:
@@ -59,6 +80,11 @@ class ZpoolManager:
                 continue
 
             prop_map = {prop.name: prop for prop in props}
-            yield dataset, prop_map
+            result[dataset] = prop_map
 
-        await exit_fut
+        exit_code = await exit_fut
+        if exit_code != 0:
+            log.warning("Failed to run zfs")
+            return {ds: {} for ds in self.full_datasets}
+
+        return result
