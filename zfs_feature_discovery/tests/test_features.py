@@ -1,4 +1,7 @@
+import stat
+
 import aiofiles
+import aiofiles.os
 import pytest
 from pytest import TempPathFactory
 
@@ -134,3 +137,25 @@ rubbish=rubbish
             "me.danielkza.io/test/zpool/rpool.guid": "2706753758230323468",
             "me.danielkza.io/test/zpool/rpool.feature@async_destroy": "enabled",
         }
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("mock_zpool_properties")
+@pytest.mark.parametrize("zpool_datasets", [[]])
+async def test_features_file_mode(
+    feature_manager: FeatureManager, zpool: ZpoolManager
+) -> None:
+    async with feature_manager:
+        feature_manager.register_zpool(zpool)
+
+        await feature_manager.refresh()
+
+        found = False
+        for entry in await aiofiles.os.scandir(feature_manager.feature_dir):
+            found = True
+
+            file_stat = await aiofiles.os.stat(entry)
+            file_mode = stat.S_IMODE(file_stat.st_mode)
+            assert file_mode == 0o0644, f"File {entry.path} should have mode 0644"
+
+        assert found, "FeatureManager should generate files"

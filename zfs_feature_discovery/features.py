@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from itertools import chain
 from pathlib import Path
 from typing import Any, AsyncContextManager, AsyncIterable, Iterable, Mapping, cast
@@ -13,6 +14,8 @@ from zfs_feature_discovery.zfs_props import ZfsProperty
 from zfs_feature_discovery.zpool import ZpoolManager
 
 log = logging.getLogger(__name__)
+
+_chmod = aiofiles.os.wrap(os.chmod)
 
 
 class FeatureManager(AsyncContextManager["FeatureManager"]):
@@ -61,7 +64,9 @@ class FeatureManager(AsyncContextManager["FeatureManager"]):
         # Make sure to use a name starting with dot and rename atomically, as documented
         # by node-feature-discovery
         async with NamedTemporaryFile(
-            dir=full_path.parent, prefix=".tmp", delete=False
+            dir=full_path.parent,
+            prefix=".tmp",
+            delete=False,
         ) as tmp_file:
             tmp_fname = cast(str, tmp_file.name)
             log.debug(f"Temporary feature file {tmp_fname}")
@@ -71,6 +76,7 @@ class FeatureManager(AsyncContextManager["FeatureManager"]):
                     await tmp_file.write(chunk.encode())
                 await tmp_file.flush()
 
+                await _chmod(tmp_file.name, 0o644)
                 await aiofiles.os.rename(tmp_fname, full_path)
                 log.info(f"Wrote feature file {full_path}")
             except Exception:
