@@ -55,11 +55,11 @@ class ZfsCommandHarness:
 
         assert proc.stderr
         while True:
-            line = await proc.stderr.readline()
+            line = (await proc.stderr.readline()).decode()
             if not line:
                 break
 
-            log.warning(f"{cmd_name}: {line.decode()}")
+            log.warning(f"{cmd_name}: {line.rstrip()}")
 
         exit_code = await proc.wait()
         log.info(f"{cmd_name}: finished with exit code {exit_code}")

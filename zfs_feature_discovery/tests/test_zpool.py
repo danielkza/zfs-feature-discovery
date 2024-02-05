@@ -165,3 +165,24 @@ async def test_zfs_dataset_write_features(
         "me.danielkza.io/test/zfs-dataset/rpool/test2.type": "filesystem",
         "me.danielkza.io/test/zfs-dataset/rpool/test2.guid": "2574342567579829017",
     }
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("mock_zpool_properties")
+@pytest.mark.parametrize("zpool_datasets", [[]])
+async def test_zpool_no_datasets_write_features(
+    feature_manager: FeatureManager, zpool: ZpoolManager
+) -> None:
+    async with feature_manager:
+        feature_manager.register_zpool(zpool)
+
+        await feature_manager.refresh_all_zpools()
+
+    all_labels = await read_all_labels(feature_manager.feature_dir)
+    assert all_labels == {
+        "me.danielkza.io/test/zpool/rpool.readonly": "off",
+        "me.danielkza.io/test/zpool/rpool.size": "944892805120",
+        "me.danielkza.io/test/zpool/rpool.health": "ONLINE",
+        "me.danielkza.io/test/zpool/rpool.guid": "2706753758230323468",
+        "me.danielkza.io/test/zpool/rpool.feature@async_destroy": "enabled",
+    }
