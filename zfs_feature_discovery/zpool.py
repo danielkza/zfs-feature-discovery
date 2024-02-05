@@ -43,6 +43,9 @@ class ZpoolManager:
     async def dataset_properties(
         self,
     ) -> AsyncIterable[tuple[str, Mapping[str, ZfsProperty]]]:
+        if not self.datasets:
+            return
+
         all_props, exit_fut = await self._zfs_cmd.get_properties()
 
         prefix = f"{self.pool_name}/"

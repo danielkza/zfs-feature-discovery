@@ -67,6 +67,7 @@ class ZfsCommandHarness:
         return exit_code
 
     async def _run(self, cmd: Sequence[str]) -> subprocess.Process:
+        log.info(f"Running {list(cmd)}")
         return await subprocess.create_subprocess_exec(
             *cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
