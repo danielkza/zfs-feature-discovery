@@ -113,9 +113,6 @@ class SettingsSource(EnvSettingsSource):
     def decode_complex_value(
         self, field_name: str, field: FieldInfo, value: Any
     ) -> Any:
-        import pdb
-
-        pdb.set_trace()
         origin = get_origin(field.annotation)
         if origin and issubclass(origin, Collection):
             args = get_args(field.annotation)
