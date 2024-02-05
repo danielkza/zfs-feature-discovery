@@ -141,13 +141,11 @@ class FeatureManager(AsyncContextManager["FeatureManager"]):
     async def refresh_zpool_datasets(self, zpool: ZpoolManager) -> Path:
         async def gen() -> AsyncIterable[str]:
             async for ds, props in zpool.dataset_properties():
-                log.info(f"Refreshing features for dataset {zpool.pool_name}/{ds}")
+                log.info(f"Refreshing features for dataset {ds}")
                 try:
                     chunk = "".join(self.gen_zfs_dataset_features(zpool, ds, props))
                 except Exception:
-                    log.exception(
-                        f"Failed to refresh features for dataset {zpool.pool_name}/{ds}"
-                    )
+                    log.exception(f"Failed to refresh features for dataset {ds}")
                 else:
                     yield chunk
 
