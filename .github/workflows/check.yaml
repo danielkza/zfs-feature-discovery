@@ -19,4 +19,4 @@ jobs:
         uses: cloudposse/github-action-pre-commit@v2.1.2
 
       - name: test
-        run: pytest
+        run: pytest -v
