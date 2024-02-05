@@ -60,9 +60,9 @@ class ZfsCommandMocker:
         self,
         obj: ZfsCommandHarness,
         cmd: Sequence[str],
-        stdout: bytes,
-        stderr: bytes,
-        exit_code: int,
+        stdout: bytes = b"",
+        stderr: bytes = b"",
+        exit_code: int = 0,
         delay: float = 0,
     ) -> None:
         cmd_expected = cmd
@@ -73,9 +73,13 @@ class ZfsCommandMocker:
 
         self._mock = self._mocker.patch.object(obj, "_run", side_effect=_run)
 
-    def check(self) -> None:
+    def check_called(self) -> None:
         assert self._mock
         self._mock.assert_called_once()
+
+    def check_not_called(self) -> None:
+        assert self._mock
+        self._mock.assert_not_called()
 
 
 async def read_labels_file(path: Path) -> AsyncIterable[tuple[str, str]]:
@@ -154,7 +158,7 @@ def mock_zpool_properties(
 @pytest.fixture
 def mock_zfs_dataset_properties(
     zpool: ZpoolManager, zfs_command_mocker: ZfsCommandMocker, zfs_get_output: bytes
-) -> ZpoolManager:
+) -> Generator[ZpoolManager, None, None]:
     zfs_command_mocker.mock(
         zpool._zfs_cmd,
         cmd=["/zfs_test", "get", "-Hp", "all", *zpool.full_datasets],
@@ -162,8 +166,8 @@ def mock_zfs_dataset_properties(
         stderr=b"hello",
         exit_code=0,
     )
-
-    return zpool
+    yield zpool
+    zfs_command_mocker.check_called()
 
 
 @pytest.fixture
@@ -172,7 +176,6 @@ def zfs_command_mocker(
 ) -> Generator[ZfsCommandMocker, None, None]:
     m = ZfsCommandMocker(mocker)
     yield m
-    m.check()
 
 
 @pytest.fixture
