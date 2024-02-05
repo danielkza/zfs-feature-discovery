@@ -14,6 +14,9 @@ from pytest_mock import MockerFixture
 from zfs_feature_discovery.config import Config
 from zfs_feature_discovery.features import FeatureManager
 from zfs_feature_discovery.zfs_props import ZfsCommandHarness
+from zfs_feature_discovery.zpool import ZpoolManager
+
+TEST_DATA_DIR = Path(__file__).resolve().parent / "fixtures"
 
 
 async def run_mock_process(
@@ -75,15 +78,6 @@ class ZfsCommandMocker:
         self._mock.assert_called_once()
 
 
-@pytest.fixture
-def zfs_command_mocker(
-    mocker: MockerFixture,
-) -> Generator[ZfsCommandMocker, None, None]:
-    m = ZfsCommandMocker(mocker)
-    yield m
-    m.check()
-
-
 async def read_labels_file(path: Path) -> AsyncIterable[tuple[str, str]]:
     async with aiofiles.open(path) as f:
         for line in await f.readlines():
@@ -107,6 +101,93 @@ async def read_all_labels(path: Path) -> dict[str, str]:
                 yield label
 
     return {k: v async for k, v in gen()}
+
+
+# Random sprinkling of different types of values
+@pytest.fixture
+def zpool_test_props() -> frozenset[str]:
+    return frozenset(["readonly", "size", "health", "guid", "feature@async_destroy"])
+
+
+@pytest.fixture
+def zfs_dataset_test_props() -> frozenset[str]:
+    return frozenset(
+        ["type", "guid", "readonly", "recordsize", "volsize", "volblocksize"]
+    )
+
+
+@pytest.fixture
+def zpool_get_output() -> bytes:
+    with open(TEST_DATA_DIR / "zpool_get_output.txt", "rb") as f:
+        return f.read()
+
+
+@pytest.fixture
+def zfs_get_output() -> bytes:
+    fixtures = [
+        "zfs_get_dataset_test1_output.txt",
+        "zfs_get_zvol_zvol1_output.txt",
+        "zfs_get_dataset_test2_output.txt",
+    ]
+
+    data = b""
+    for fixture in fixtures:
+        with open(TEST_DATA_DIR / fixture, "rb") as f:
+            data += f.read()
+
+    return data
+
+
+@pytest.fixture
+def mock_zpool_properties(
+    zpool: ZpoolManager, zfs_command_mocker: ZfsCommandMocker, zpool_get_output: bytes
+) -> None:
+    zfs_command_mocker.mock(
+        zpool._zpool_cmd,
+        cmd=["/zpool_test", "get", "-Hp", "all", zpool.pool_name],
+        stdout=zpool_get_output,
+        stderr=b"hello",
+        exit_code=0,
+    )
+
+
+@pytest.fixture
+def mock_zfs_dataset_properties(
+    zpool: ZpoolManager, zfs_command_mocker: ZfsCommandMocker, zfs_get_output: bytes
+) -> ZpoolManager:
+    zfs_command_mocker.mock(
+        zpool._zfs_cmd,
+        cmd=["/zfs_test", "get", "-Hp", "all", *zpool.full_datasets],
+        stdout=zfs_get_output,
+        stderr=b"hello",
+        exit_code=0,
+    )
+
+    return zpool
+
+
+@pytest.fixture
+def zfs_command_mocker(
+    mocker: MockerFixture,
+) -> Generator[ZfsCommandMocker, None, None]:
+    m = ZfsCommandMocker(mocker)
+    yield m
+    m.check()
+
+
+@pytest.fixture
+def zpool_datasets() -> list[str]:
+    return ["test1", "zvol1", "test2"]
+
+
+@pytest.fixture
+def zpool(zpool_datasets: list[str]) -> ZpoolManager:
+    return ZpoolManager(
+        pool_name="rpool",
+        zpool_command=Path("/zpool_test"),
+        zfs_command=Path("/zfs_test"),
+        datasets=zpool_datasets,
+    )
 
 
 @pytest.fixture
