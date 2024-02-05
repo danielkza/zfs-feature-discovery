@@ -180,7 +180,7 @@ def zfs_command_mocker(
 
 @pytest.fixture
 def zpool_datasets() -> list[str]:
-    return ["test1", "zvol1", "test2"]
+    return ["test1", "zvol1", "test/test2"]
 
 
 @pytest.fixture

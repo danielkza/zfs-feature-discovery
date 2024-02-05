@@ -1,5 +1,7 @@
 import os
+import re
 from pathlib import Path
+from string import Formatter
 from typing import (
     Annotated,
     Any,
@@ -123,10 +125,48 @@ class SettingsSource(EnvSettingsSource):
         return super().decode_complex_value(field_name, field, value)
 
 
+# not a real DNS label match, but good enough
+LABEL_NAMESPACE_PATTERN = re.compile(r"^(?:[A-Za-z0-9]+\.)+[A-Za-z0-9]+$")
+LABEL_PATH_PATTERN = re.compile(r"^[A-Za-z0-9-_.]*$")
+
+_formatter = Formatter()
+
+
+def validate_label_format(format: str, placeholders: set[str]) -> str:
+    if not format:
+        raise ValueError("Must not be empty")
+
+    for literal, field_name, _, _ in _formatter.parse(format):
+        if field_name and field_name not in placeholders:
+            raise ValueError(f"Invalid placeholder: {field_name}")
+        if not LABEL_PATH_PATTERN.match(literal):
+            raise ValueError(
+                "Must only contain alphanumeric characters, dash, underscore or dots"
+            )
+
+    return format
+
+
 class LabelConfig(BaseModel):
-    namespace: str = "feature.node.kubernetes.io"
-    zpool_format: str = "zpool/{pool_name}.{property_name}"
-    zfs_dataset_format: str = "zfs-dataset/{pool_name}/{dataset_name}.{property_name}"
+    namespace: str = Field(
+        default="feature.node.kubernetes.io", pattern=LABEL_NAMESPACE_PATTERN.pattern
+    )
+    zpool_format: str = Field(default="zpool.{pool_name}.{property_name}")
+    zfs_dataset_format: str = Field(
+        default="zfs.{pool_name}.{dataset_name}.{property_name}"
+    )
+
+    @field_validator("zpool_format")
+    @classmethod
+    def validate_zpool_format(cls, value: str) -> str:
+        return validate_label_format(value, {"pool_name", "property_name"})
+
+    @field_validator("zfs_dataset_format")
+    @classmethod
+    def validate_zfs_dataset_props(cls, value: str) -> str:
+        return validate_label_format(
+            value, {"pool_name", "dataset_name", "property_name"}
+        )
 
 
 class Config(BaseSettings):

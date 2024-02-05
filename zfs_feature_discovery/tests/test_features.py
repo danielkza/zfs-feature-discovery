@@ -21,9 +21,9 @@ def feature_manager(
         feature_dir=tmp_path_factory.mktemp("features-"),
         zpool_props=zpool_test_props,
         zfs_dataset_props=zfs_dataset_test_props,
-        label_namespace="me.danielkza.io/test",
-        zpool_label_format="zpool/{pool_name}.{property_name}",
-        zfs_dataset_label_format="zfs-dataset/{pool_name}/{dataset_name}.{property_name}",
+        label_namespace="me.danielkza.io",
+        zpool_label_format="zpool.{pool_name}.{property_name}",
+        zfs_dataset_label_format="zfs.{pool_name}.{dataset_name}.{property_name}",
     )
     return fm
 
@@ -40,11 +40,11 @@ async def test_zpool_write_features(
 
     all_labels = await read_all_labels(feature_manager.feature_dir)
     assert all_labels == {
-        "me.danielkza.io/test/zpool/rpool.readonly": "off",
-        "me.danielkza.io/test/zpool/rpool.size": "944892805120",
-        "me.danielkza.io/test/zpool/rpool.health": "ONLINE",
-        "me.danielkza.io/test/zpool/rpool.guid": "2706753758230323468",
-        "me.danielkza.io/test/zpool/rpool.feature@async_destroy": "enabled",
+        "me.danielkza.io/zpool.rpool.readonly": "off",
+        "me.danielkza.io/zpool.rpool.size": "944892805120",
+        "me.danielkza.io/zpool.rpool.health": "ONLINE",
+        "me.danielkza.io/zpool.rpool.guid": "2706753758230323468",
+        "me.danielkza.io/zpool.rpool.feature_async_destroy": "enabled",
     }
 
 
@@ -60,24 +60,24 @@ async def test_zfs_dataset_write_features(
 
     all_labels = await read_all_labels(feature_manager.feature_dir)
     assert all_labels == {
-        "me.danielkza.io/test/zfs-dataset/rpool/test1.readonly": "off",
-        "me.danielkza.io/test/zfs-dataset/rpool/test1.volsize": "",
-        "me.danielkza.io/test/zfs-dataset/rpool/test1.volblocksize": "",
-        "me.danielkza.io/test/zfs-dataset/rpool/test1.recordsize": "131072",
-        "me.danielkza.io/test/zfs-dataset/rpool/test1.type": "filesystem",
-        "me.danielkza.io/test/zfs-dataset/rpool/test1.guid": "2574342567579829017",
-        "me.danielkza.io/test/zfs-dataset/rpool/zvol1.readonly": "off",
-        "me.danielkza.io/test/zfs-dataset/rpool/zvol1.volsize": "10737418240",
-        "me.danielkza.io/test/zfs-dataset/rpool/zvol1.volblocksize": "16384",
-        "me.danielkza.io/test/zfs-dataset/rpool/zvol1.recordsize": "",
-        "me.danielkza.io/test/zfs-dataset/rpool/zvol1.type": "volume",
-        "me.danielkza.io/test/zfs-dataset/rpool/zvol1.guid": "2814323311404247512",
-        "me.danielkza.io/test/zfs-dataset/rpool/test2.readonly": "off",
-        "me.danielkza.io/test/zfs-dataset/rpool/test2.volsize": "",
-        "me.danielkza.io/test/zfs-dataset/rpool/test2.volblocksize": "",
-        "me.danielkza.io/test/zfs-dataset/rpool/test2.recordsize": "131072",
-        "me.danielkza.io/test/zfs-dataset/rpool/test2.type": "filesystem",
-        "me.danielkza.io/test/zfs-dataset/rpool/test2.guid": "2574342567579829017",
+        "me.danielkza.io/zfs.rpool.test1.readonly": "off",
+        "me.danielkza.io/zfs.rpool.test1.volsize": "",
+        "me.danielkza.io/zfs.rpool.test1.volblocksize": "",
+        "me.danielkza.io/zfs.rpool.test1.recordsize": "131072",
+        "me.danielkza.io/zfs.rpool.test1.type": "filesystem",
+        "me.danielkza.io/zfs.rpool.test1.guid": "2574342567579829017",
+        "me.danielkza.io/zfs.rpool.zvol1.readonly": "off",
+        "me.danielkza.io/zfs.rpool.zvol1.volsize": "10737418240",
+        "me.danielkza.io/zfs.rpool.zvol1.volblocksize": "16384",
+        "me.danielkza.io/zfs.rpool.zvol1.recordsize": "",
+        "me.danielkza.io/zfs.rpool.zvol1.type": "volume",
+        "me.danielkza.io/zfs.rpool.zvol1.guid": "2814323311404247512",
+        "me.danielkza.io/zfs.rpool.test_test2.readonly": "off",
+        "me.danielkza.io/zfs.rpool.test_test2.volsize": "",
+        "me.danielkza.io/zfs.rpool.test_test2.volblocksize": "",
+        "me.danielkza.io/zfs.rpool.test_test2.recordsize": "131072",
+        "me.danielkza.io/zfs.rpool.test_test2.type": "filesystem",
+        "me.danielkza.io/zfs.rpool.test_test2.guid": "2574342567579829017",
     }
 
 
@@ -94,11 +94,11 @@ async def test_zpool_no_datasets_write_features(
 
     all_labels = await read_all_labels(feature_manager.feature_dir)
     assert all_labels == {
-        "me.danielkza.io/test/zpool/rpool.readonly": "off",
-        "me.danielkza.io/test/zpool/rpool.size": "944892805120",
-        "me.danielkza.io/test/zpool/rpool.health": "ONLINE",
-        "me.danielkza.io/test/zpool/rpool.guid": "2706753758230323468",
-        "me.danielkza.io/test/zpool/rpool.feature@async_destroy": "enabled",
+        "me.danielkza.io/zpool.rpool.readonly": "off",
+        "me.danielkza.io/zpool.rpool.size": "944892805120",
+        "me.danielkza.io/zpool.rpool.health": "ONLINE",
+        "me.danielkza.io/zpool.rpool.guid": "2706753758230323468",
+        "me.danielkza.io/zpool.rpool.feature_async_destroy": "enabled",
     }
 
 
@@ -131,11 +131,11 @@ rubbish=rubbish
 
         all_labels = await read_all_labels(feature_manager.feature_dir)
         assert all_labels == {
-            "me.danielkza.io/test/zpool/rpool.readonly": "off",
-            "me.danielkza.io/test/zpool/rpool.size": "944892805120",
-            "me.danielkza.io/test/zpool/rpool.health": "ONLINE",
-            "me.danielkza.io/test/zpool/rpool.guid": "2706753758230323468",
-            "me.danielkza.io/test/zpool/rpool.feature@async_destroy": "enabled",
+            "me.danielkza.io/zpool.rpool.readonly": "off",
+            "me.danielkza.io/zpool.rpool.size": "944892805120",
+            "me.danielkza.io/zpool.rpool.health": "ONLINE",
+            "me.danielkza.io/zpool.rpool.guid": "2706753758230323468",
+            "me.danielkza.io/zpool.rpool.feature_async_destroy": "enabled",
         }
 
 
