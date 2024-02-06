@@ -1,0 +1,270 @@
+## @section Image settings
+
+global:
+  ## @param global.imageRegistry Global Docker image registry
+  imageRegistry: ""
+  ## @param global.imagePullSecrets Global Docker registry secret names as an array
+  ## E.g.
+  ## imagePullSecrets:
+  ##   - myRegistryKeySecretName
+  ##
+  imagePullSecrets: []
+
+## zfs-feature-discovery image
+## @param image.registry [default: ghcr.io] zfs-feature-discovery image registry
+## @param image.repository [default: ghcr.io/danielkza/zfs-feature-discovery] zfs-feature-discovery image repository
+## @param image.tag zfs-feature-discovery Image tag (immutable tags are recommended)
+## @param image.digest zfs-feature-discovery image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
+## @param image.pullPolicy zfs-feature-discovery image pull policy
+## @param image.pullSecrets zfs-feature-discovery image pull secrets
+##
+image:
+  registry: ghcr.io
+  repository: danielkza/zfs-feature-discovery
+  tag: "0.1.0"
+  digest: ""
+  ## Specify a imagePullPolicy
+  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+  ## ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
+  ##
+  pullPolicy: IfNotPresent
+  ## Optionally specify an array of imagePullSecrets.
+  ## Secrets must be manually created in the namespace.
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ## e.g:
+  ## pullSecrets:
+  ##   - myRegistryKeySecretName
+  ##
+  pullSecrets: []
+
+## @section zfs-feature-discovery parameters
+##
+
+zfsDiscovery:
+  ## @param zfsDiscovery.zpools Zpools and corresponding datasets to monitor
+  ## Example:
+  ## zfsFeatures:
+  ##  zpools:
+  ##    rpool:
+  ##      - dataset1
+  ##      - dataset2
+  ##    dpool: []
+  zpools: {}
+  nodeLabels:
+    ## @param zfsDiscovery.nodeLabels.zfsFormat [default: "zfs.{pool_name}.{dataset_name}.{property_name}"] Format string to generate dataset property labels. Do not include the namespace. Available placeholders: pool_name, dataset_name, property_name
+    ##
+    zfsFormat: null
+    ## @param zfsDiscovery.nodeLabels.zpoolFormat [default: "zpool.{pool_name}.{property_name}"] Format string to generate pool property labels. Do not include the namespace. Available placeholders: pool_name, property_name
+    ##
+    zpoolFormat: null
+    ## @param zfsDiscovery.nodeLabels.globalFormat [default: "zfs-global.{property_name}"] Format string to generate pool property labels. Do not include the namespace. Available placeholders: property_name
+    ##
+    globalFormat: null
+    ## @param zfsDiscovery.nodeLabels.namespace Namespace prefix for generated labels. Don't include a trailin slash.
+    namespace: feature.node.kubernetes.io
+  zfs:
+    ## @param zfsDiscovery.zfs.hostBin Path *from the host* to zfs binary.
+    ##
+    hostBin: /usr/sbin/zfs
+    ## @param zfsDiscovery.zfs.command Path *in the container* to zfs binary. Don't change unless you have a good reason to.
+    ##
+    command: /usr/local/bin/host-zfs
+    ## @param zfsDiscovery.zfs.props Dataset properties to generate labels for. This is additive by default. Use "-some_prop" (or "-all") to remove pre-included properties.
+    ##
+    props: []
+  zpool:
+    ## @param zfsDiscovery.zpool.hostBin Path *from the host* to zpool binary.
+    ##
+    hostBin: /usr/sbin/zpool
+    ## @param zfsDiscovery.zpool.command Path *in the container* to zfs binary. Don't change unless you have a good reason to.
+    ##
+    command: /usr/local/bin/host-zpool
+    ## @param zfsDiscovery.zpool.props Pool properties to generate labels for. This is additive by default. Use "-some_prop" (or "-all") to remove pre-included properties.
+    ##
+    props: []
+  hostid:
+    ## @param zfsDiscovery.hostid.hostBin Path *from the host* to hostid binary.
+    ##
+    hostBin: /usr/bin/hostid
+    ## @param zfsDiscovery.hostid.command Path *in the container* to hostid binary. Don't change unless you have a good reason to.
+    ##
+    command: /usr/local/bin/host-hostid
+  ## @param zfsDiscovery.sleepInterval How frequently to re-generate features, in seconds
+  ##
+  sleepInterval: 60
+  ## @param zfsDiscovery.hostFeatureDir Host directory to write features in. Don't change unless you have a good reason to.
+  ##
+  hostFeatureDir: /etc/kubernetes/node-feature-discovery/features.d
+  ## @param zfsDiscovery.logLevel Log level
+  ##
+  logLevel: INFO
+
+## @section Common parameters
+##
+
+## @param nameOverride String to partially override external-dns.fullname template (will maintain the release name)
+##
+nameOverride: ""
+## @param fullnameOverride String to fully override external-dns.fullname template
+##
+fullnameOverride: ""
+
+## @param commonLabels Labels to add to all deployed objects
+##
+commonLabels: {}
+## @param commonAnnotations Annotations to add to all deployed objects
+##
+commonAnnotations: {}
+##
+## @param extraDeploy Array of extra objects to deploy with the release (evaluated as a template).
+##
+extraDeploy: []
+
+## @param hostAliases Deployment pod host aliases
+## https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/
+##
+hostAliases: []
+
+## @param updateStrategy update strategy type
+## @skip updateStrategy
+## ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#update-strategies
+##
+updateStrategy:
+  type: RollingUpdate
+
+## @param command Override default command
+##
+command: []
+## @param args Override default args
+##
+args: []
+
+## @param lifecycleHooks [object] Override default etcd container hooks
+##
+lifecycleHooks: {}
+## @param schedulerName Alternative scheduler
+## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
+##
+schedulerName: ""
+## @param topologySpreadConstraints Topology Spread Constraints for pod assignment
+## https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+## The value is evaluated as a template
+##
+topologySpreadConstraints: []
+## @param replicaCount Desired number of ExternalDNS replicas
+##
+replicaCount: 1
+## @param podAffinityPreset Pod affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`
+## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+##
+podAffinityPreset: ""
+## @param podAntiAffinityPreset Pod anti-affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`
+## Ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+## Allowed values: soft, hard
+##
+podAntiAffinityPreset: soft
+## @param nodeAffinityPreset [object] Node affinity preset
+## Ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
+##
+nodeAffinityPreset:
+  type: ""
+  key: ""
+  values: []
+## @param affinity Affinity for pod assignment
+## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+## Note: podAffinityPreset, podAntiAffinityPreset, and  nodeAffinityPreset will be ignored when it's set
+##
+affinity: {}
+## @param nodeSelector Node labels for pod assignment
+## Ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+##
+nodeSelector: {}
+## @param tolerations Tolerations for pod assignment
+## Ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+##
+tolerations: []
+## @param podAnnotations Additional annotations to apply to the pod.
+##
+podAnnotations: {}
+## @param podLabels Additional labels to be added to pods
+##
+podLabels: {}
+## @param priorityClassName priorityClassName
+##
+priorityClassName: "system-node-critical"
+
+## @param containerSecurityContext [object] Define the Container's  Security Context, see https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+containerSecurityContext:
+  enabled: true
+  seLinuxOptions: null
+  runAsNonRoot: false
+  privileged: true
+  allowPrivilegeEscalation: true
+  readOnlyRootFilesystem: false
+  capabilities: {}
+  seccompProfile:
+    type: "RuntimeDefault"
+
+## @param podSecurityContext [object] Define the Pods's  Security Context, see https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+podSecurityContext:
+  enabled: true
+  fsGroupChangePolicy: Always
+  sysctls: []
+  supplementalGroups: []
+  fsGroup: 1001
+
+## @param resources.limits see ref: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
+## @param resources.requests see ref: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
+##
+resources:
+  limits: {}
+  requests: {}
+
+## @param livenessProbe [object] Override default liveness probe
+##
+livenessProbe:
+  enabled: false
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 2
+  successThreshold: 1
+## @param readinessProbe [object] Override default readiness probe
+##
+readinessProbe:
+  enabled: false
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 6
+  successThreshold: 1
+## @param startupProbe [object] Override default startup probe
+##
+startupProbe:
+  enabled: false
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 6
+  successThreshold: 1
+## @param customLivenessProbe Override default liveness probe
+##
+customLivenessProbe: {}
+## @param customReadinessProbe Override default readiness probe
+##
+customReadinessProbe: {}
+## @param customStartupProbe Override default startup probe
+##
+customStartupProbe: {}
+## @param extraVolumes A list of volumes to be added to the pod
+##
+extraVolumes: []
+## @param extraVolumeMounts A list of volume mounts to be added to the pod
+##
+extraVolumeMounts: []
+## @param podDisruptionBudget Configure PodDisruptionBudget
+## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+##
+podDisruptionBudget: {}

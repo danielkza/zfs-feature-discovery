@@ -1,44 +1,20 @@
 # ZFS Feature Discovery
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/NVIDIA/gpu-feature-discovery)](https://goreportcard.com/report/github.com/NVIDIA/gpu-feature-discovery)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Beta Version](#beta-version)
-- [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
-  * [Node Feature Discovery (NFD)](#node-feature-discovery-nfd)
-  * [Deploying](#deploy-nvidia-gpu-feature-discovery-gfd)
-    + [Daemonset](#daemonset)
-  * [Verifying Everything Works](#verifying-everything-works)
-- [Configuration](#the-gfd-command-line-interface)
-- [Generated Labels](#generated-labels)
-- [Deployment via `helm`](#deployment-via-helm)
-- [Building and running locally with Docker](#building-and-running-locally-with-docker)
-- [Building and running locally on your native machine](#building-and-running-locally-on-your-native-machine)
-
 ## Overview
 
-ZFS GPU Feature Discovery for Kubernetes is a companion to [Node Feature Discovery](https://github.com/kubernetes-sigs/node-feature-discovery) to label Nodes with ZFS pool and dataset information.
+ZFS GPU Feature Discovery for Kubernetes is a companion to [Node Feature Discovery](https://github.com/kubernetes-sigs/node-feature-discovery) to label Nodes with ZFS version, pool and dataset information.
 
 ## Status Version
 
-This software is Alpha-state. Any feedback is appreciated on refining features and interfaces before v1.0.0.
+This software is Alpha state. Any feedback is appreciated on refining features and interfaces before v1.0.0.
 
 ## Prerequisites
 
 * NFD deployed on each node you want to label with the local source configured
     - See https://github.com/kubernetes-sigs/node-feature-discovery
-* `zfsutils`` installed on any node you expected ZFS datasets to be present in. If zfsutils is missing or unavailable, pools and datasets will not be detected correctly, though labels will still be produced with empty/default values.
-    - Custom path for `zfs` and `zpool` commands can be configured if required.
-
-## Quick Start
-
-The following assumes you have at least one node in your cluster with GPUs and
-the standard NVIDIA [drivers](https://www.nvidia.com/Download/index.aspx) have
-already been installed on it.
+* `zfsutils`` installed on any node you expected ZFS datasets to be present in. If zfsutils is missing or unavailable, pools and datasets will not be detected correctly, though labels will still be produced with empty/default values for consistency.
+    - Custom path for `zfs`, `zpool` and `hostid` commands will be mounted from the host by default when using Helm.
+      You can configure them differently if required.
 
 ### Node Feature Discovery (NFD)
 
@@ -50,9 +26,11 @@ If you change the feature directory, make sure to configure `zfs-feature-discove
 
 ### Deploy the Helm chart
 
-See the Helm chart [instructions](deployments/helm/README.md) for available values.
-Deploy the Helm chart. You should now have a `DaemonSet` configured and running on each
-of your Nodes.
+See the Helm chart [instructions](deployments/helm/README.md) on how to deploy.
+Make sure at least one zpool is defined for the `zfsDiscovery.zpools` value.
+
+After installing, you should now have a `DaemonSet` for `zfs-feature-discovery`
+and corresponding Pod running on each of your Nodes.
 
 Note: deployment methods other than `DaemonSet` are not yet available.
 
@@ -68,21 +46,30 @@ items:
   kind: Node
   metadata:
     ...
-
     labels:
-      openzfs.org/zpool/
-      TODO: label examples
+      feature.node.kubernetes.io/zfs-global.hostid=00fac711
+      feature.node.kubernetes.io/zfs-global.kver=2.2.2-1
+      feature.node.kubernetes.io/zfs-global.ver=2.2.2-1
+      feature.node.kubernetes.io/zpool.rpool.ashift=12
+      feature.node.kubernetes.io/zpool.rpool.capacity=2
+      feature.node.kubernetes.io/zpool.rpool.compatibility=openzfs-2.1-linux
+      feature.node.kubernetes.io/zpool.rpool.guid=2706753758230323468
+      feature.node.kubernetes.io/zpool.rpool.health=ONLINE
+      feature.node.kubernetes.io/zpool.rpool.readonly=off
+      feature.node.kubernetes.io/zpool.rpool.size=944892805120
       ...
 ...
 ```
 
 ## Configuration
 
-`zfs-feature-discovery` is configured through env variables prefixed with `ZFS_FEATURE_DISCOVERY`.
-By default, these are sourced from a `ConfigMap` for ease of use, with values filled from Helm values.
+When deploying using the Helm chart, configuration in YAML format is generated and attached
+as a ConfigMap.
+
+You can also use `extraEnvVarsCM` to pass env vars to override any settings. The env vars
+are prefix with `ZFS_FEATURE_DISCOVERY_`.
 
 TODO: add env vars
-
 
 ## Contributing
 

@@ -1,12 +1,9 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    # Ruff version.
-    rev: v0.2.0
+    rev: v0.2.1
     hooks:
-      # Run the linter.
       - id: ruff
         args: [ --fix ]
-      # Run the formatter.
       - id: ruff-format
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.8.0
@@ -14,3 +11,12 @@ repos:
       - id: mypy
         language: system
         args: [--strict]
+  - repo: https://github.com/bitnami/readme-generator-for-helm
+    rev: e2f0c10
+    hooks:
+      - id: helm-readme-generator
+        pass_filenames: false
+        always_run: true
+        args:
+          - --readme=deployments/helm/zfs-feature-discovery/README.md
+          - --values=deployments/helm/zfs-feature-discovery/values.yaml
