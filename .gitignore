@@ -160,3 +160,4 @@ cython_debug/
 #.idea/
 
 /deployments/helm/*/charts
+.ruff_cache/
