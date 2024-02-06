@@ -25,7 +25,7 @@ If you change the feature directory, make sure to configure `zfs-feature-discove
 
 ### Deploy the Helm chart
 
-See the Helm chart [instructions](deployments/helm/README.md) on how to deploy.
+See the Helm chart [instructions](deployments/helm/zfs-feature-discovery/README.md) on how to deploy.
 Make sure at least one zpool is defined for the `zfsDiscovery.zpools` value.
 
 After installing, you should now have a `DaemonSet` for `zfs-feature-discovery`
@@ -72,6 +72,29 @@ TODO: add env vars
 
 ## Contributing
 
+### Linting and tests
+
+Linting and testing is configured using `pre-commit`. Due to `pre-commit` limitations, for `mypy`
+to run correctly, you need to set it up and install the project dependencies manually in your environment.
+
+For example, you can do:
+
+```
+cd zfs-feature-discovery
+python3 -m venv venv
+source venv/bin/activate
+pip install -e `.[test]`
+pre-commit install
+```
+
+If you would like to run tests manually, you can do:
+```
+cd zfs-feature-discovery
+./venv/bin/pytest
+```
+
+Alternatively, it will run automatically for submitted PRs on Github Actions.
+
 ### Docker builds
 
 To build the standard Docker image run the following from the root of the repository:
@@ -87,18 +110,6 @@ To build a development image and mount the source directory to it, you can do:
 cd zfs-feature-discovery
 docker build -f docker/Dockerfile -t zfs-feature-discovery-devel
 docker run -it --mount=$PWD:/src zfs-feature-discovery-devel /bin/bash
-```
-
-### Running tests
-
-You can use `pytest` to run tests after you have set up the package.
-
-If you want to do it locally, create a virtualenv, then install the dependencies and run tests:
-
-```
-cd zfs-feature-discovery
-pip install -e '.[test]'
-pytest
 ```
 
 ## License
