@@ -2,7 +2,7 @@
 
 ## Overview
 
-ZFS Feature Discovery for Kubernetes is a companion to [Node Feature Discovery](https://github.com/kubernetes-sigs/node-feature-discovery) to label Nodes with ZFS version, pool and dataset information.
+ZFS GPU Feature Discovery for Kubernetes is a companion to [Node Feature Discovery](https://github.com/kubernetes-sigs/node-feature-discovery) to label Nodes with ZFS version, pool and dataset information.
 
 ## Status Version
 
@@ -12,9 +12,8 @@ This software is Alpha state. Any feedback is appreciated on refining features a
 
 * NFD deployed on each node you want to label with the local source configured
     - See https://github.com/kubernetes-sigs/node-feature-discovery
-* `zfsutils`` installed on any node you expected ZFS datasets to be present in. If zfsutils is missing or unavailable, pools and datasets will not be detected correctly, though labels will still be produced with empty/default values for consistency.
-    - Custom path for `zfs`, `zpool` and `hostid` commands will be mounted from the host by default when using Helm.
-      You can configure them differently if required.
+* `zfsutils` installed on any node you expected ZFS datasets to be present in. If `zfs`, `zpool` and/or `hostid` commands are not availabe, pools and datasets will not be detected correctly, though labels will still be produced with empty/default values for consistency.
+    - Binaries commands will be mounted from the host by default when usin Helm. You can configure them differently if required.
 
 ### Node Feature Discovery (NFD)
 
