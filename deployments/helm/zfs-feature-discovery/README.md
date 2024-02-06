@@ -4,6 +4,20 @@
 
 This Helm chart is based on code from https://github.com/NVIDIA/gpu-feature-discovery and https://github.com/openebs/zfs-localpv
 
+## Installation Example
+
+```
+cat > my-values.yaml <<EOF
+zfsFeatures:
+  zpools:
+    rpool: ["my/dataset", "my/other/dataset"]
+    dpool: []
+EOF
+
+helm repo add zfs-feature-discovery https://danielkza.github.io/zfs-feature-discovery
+helm install zfs-feature-discovery zfs-feature-discovery/zfs-feature-discovery -f my-values.yaml
+```
+
 ## Parameters
 
 ### Image settings
@@ -21,24 +35,24 @@ This Helm chart is based on code from https://github.com/NVIDIA/gpu-feature-disc
 
 ### zfs-feature-discovery parameters
 
-| Name                                   | Description                                                                                                                                     | Value                                               |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| `zfsDiscovery.zpools`                  | Zpools and corresponding datasets to monitor                                                                                                    | `{}`                                                |
-| `zfsDiscovery.nodeLabels.zfsFormat`    | Format string to generate dataset property labels. Do not include the namespace. Available placeholders: pool_name, dataset_name, property_name | `"zfs.{pool_name}.{dataset_name}.{property_name}"`  |
-| `zfsDiscovery.nodeLabels.zpoolFormat`  | Format string to generate pool property labels. Do not include the namespace. Available placeholders: pool_name, property_name                  | `"zpool.{pool_name}.{property_name}"`               |
-| `zfsDiscovery.nodeLabels.globalFormat` | Format string to generate pool property labels. Do not include the namespace. Available placeholders: property_name                             | `"zfs-global.{property_name}"`                      |
-| `zfsDiscovery.nodeLabels.namespace`    | Namespace prefix for generated labels. Don't include a trailin slash.                                                                           | `feature.node.kubernetes.io`                        |
-| `zfsDiscovery.zfs.hostBin`             | Path *from the host* to zfs binary.                                                                                                             | `/usr/sbin/zfs`                                     |
-| `zfsDiscovery.zfs.command`             | Path *in the container* to zfs binary. Don't change unless you have a good reason to.                                                           | `/usr/local/bin/host-zfs`                           |
-| `zfsDiscovery.zfs.props`               | Dataset properties to generate labels for. This is additive by default. Use "-some_prop" (or "-all") to remove pre-included properties.         | `[]`                                                |
-| `zfsDiscovery.zpool.hostBin`           | Path *from the host* to zpool binary.                                                                                                           | `/usr/sbin/zpool`                                   |
-| `zfsDiscovery.zpool.command`           | Path *in the container* to zfs binary. Don't change unless you have a good reason to.                                                           | `/usr/local/bin/host-zpool`                         |
-| `zfsDiscovery.zpool.props`             | Pool properties to generate labels for. This is additive by default. Use "-some_prop" (or "-all") to remove pre-included properties.            | `[]`                                                |
-| `zfsDiscovery.hostid.hostBin`          | Path *from the host* to hostid binary.                                                                                                          | `/usr/bin/hostid`                                   |
-| `zfsDiscovery.hostid.command`          | Path *in the container* to hostid binary. Don't change unless you have a good reason to.                                                        | `/usr/local/bin/host-hostid`                        |
-| `zfsDiscovery.sleepInterval`           | How frequently to re-generate features, in seconds                                                                                              | `60`                                                |
-| `zfsDiscovery.hostFeatureDir`          | Host directory to write features in. Don't change unless you have a good reason to.                                                             | `/etc/kubernetes/node-feature-discovery/features.d` |
-| `zfsDiscovery.logLevel`                | Log level                                                                                                                                       | `INFO`                                              |
+| Name                                   | Description                                                                                                                                                                                   | Value                                               |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `zfsDiscovery.zpools`                  | Map from zpools names to dataset names datasets to monitor. If a zpool is present with empty datasets, only collect zpool information for it. Example: {"rpool": ["ds1", "ds2"], "dpool": []} | `{}`                                                |
+| `zfsDiscovery.nodeLabels.zfsFormat`    | Format string to generate dataset property labels. Do not include the namespace. Available placeholders: pool_name, dataset_name, property_name                                               | `"zfs.{pool_name}.{dataset_name}.{property_name}"`  |
+| `zfsDiscovery.nodeLabels.zpoolFormat`  | Format string to generate pool property labels. Do not include the namespace. Available placeholders: pool_name, property_name                                                                | `"zpool.{pool_name}.{property_name}"`               |
+| `zfsDiscovery.nodeLabels.globalFormat` | Format string to generate pool property labels. Do not include the namespace. Available placeholders: property_name                                                                           | `"zfs-global.{property_name}"`                      |
+| `zfsDiscovery.nodeLabels.namespace`    | Namespace prefix for generated labels. Don't include a trailin slash.                                                                                                                         | `feature.node.kubernetes.io`                        |
+| `zfsDiscovery.zfs.hostBin`             | Path *from the host* to zfs binary.                                                                                                                                                           | `/usr/sbin/zfs`                                     |
+| `zfsDiscovery.zfs.command`             | Path *in the container* to zfs binary. Don't change unless you have a good reason to.                                                                                                         | `/usr/local/bin/host-zfs`                           |
+| `zfsDiscovery.zfs.props`               | Dataset properties to generate labels for. This is additive by default. Use "-some_prop" (or "-all") to remove pre-included properties.                                                       | `[]`                                                |
+| `zfsDiscovery.zpool.hostBin`           | Path *from the host* to zpool binary.                                                                                                                                                         | `/usr/sbin/zpool`                                   |
+| `zfsDiscovery.zpool.command`           | Path *in the container* to zfs binary. Don't change unless you have a good reason to.                                                                                                         | `/usr/local/bin/host-zpool`                         |
+| `zfsDiscovery.zpool.props`             | Pool properties to generate labels for. This is additive by default. Use "-some_prop" (or "-all") to remove pre-included properties.                                                          | `[]`                                                |
+| `zfsDiscovery.hostid.hostBin`          | Path *from the host* to hostid binary.                                                                                                                                                        | `/usr/bin/hostid`                                   |
+| `zfsDiscovery.hostid.command`          | Path *in the container* to hostid binary. Don't change unless you have a good reason to.                                                                                                      | `/usr/local/bin/host-hostid`                        |
+| `zfsDiscovery.sleepInterval`           | How frequently to re-generate features, in seconds                                                                                                                                            | `60`                                                |
+| `zfsDiscovery.hostFeatureDir`          | Host directory to write features in. Don't change unless you have a good reason to.                                                                                                           | `/etc/kubernetes/node-feature-discovery/features.d` |
+| `zfsDiscovery.logLevel`                | Log level                                                                                                                                                                                     | `INFO`                                              |
 
 ### Common parameters
 

@@ -41,14 +41,7 @@ image:
 ##
 
 zfsDiscovery:
-  ## @param zfsDiscovery.zpools Zpools and corresponding datasets to monitor
-  ## Example:
-  ## zfsFeatures:
-  ##  zpools:
-  ##    rpool:
-  ##      - dataset1
-  ##      - dataset2
-  ##    dpool: []
+  ## @param zfsDiscovery.zpools Map from zpools names to dataset names datasets to monitor. If a zpool is present with empty datasets, only collect zpool information for it. Example: {"rpool": ["ds1", "ds2"], "dpool": []}
   zpools: {}
   nodeLabels:
     ## @param zfsDiscovery.nodeLabels.zfsFormat [default: "zfs.{pool_name}.{dataset_name}.{property_name}"] Format string to generate dataset property labels. Do not include the namespace. Available placeholders: pool_name, dataset_name, property_name
