@@ -8,7 +8,7 @@ This Helm chart is based on code from https://github.com/NVIDIA/gpu-feature-disc
 
 ```
 cat > my-values.yaml <<EOF
-zfsFeatures:
+zfsDiscovery:
   zpools:
     rpool: ["my/dataset", "my/other/dataset"]
     dpool: []
