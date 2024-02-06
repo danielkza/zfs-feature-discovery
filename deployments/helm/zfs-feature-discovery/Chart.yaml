@@ -3,7 +3,6 @@ name: zfs-feature-discovery
 type: application
 description: A Helm chart for ZFS discovery on Kubernetes
 version: "0.1.0"
-appVersion: "0.1.0"
 kubeVersion: ">= 1.26.0-0"
 home: https://github.com/danielkza/zfs-feature-discovery
 
