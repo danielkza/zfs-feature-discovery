@@ -1,0 +1,35 @@
+name: tag-release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - zfs-feature-discovery/__init__.py
+
+jobs:
+  tag-release:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install hatch
+        run: pip install hatch
+
+      - name: Tag new version
+        run: .github/release.py tag-release
