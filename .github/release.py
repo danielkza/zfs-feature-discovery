@@ -21,7 +21,7 @@ def create_tag(tag: str) -> None:
         return
 
     subprocess.check_call(["git", "tag", tag])
-    subprocess.check_call(["git", "push", tag])
+    subprocess.check_call(["git", "push", "origin", tag])
 
 
 def create_chart_tag(path: Path) -> None:

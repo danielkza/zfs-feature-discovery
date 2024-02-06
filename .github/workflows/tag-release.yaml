@@ -4,18 +4,16 @@ on:
   push:
     branches:
       - main
-    paths:
-      - zfs-feature-discovery/__init__.py
 
 jobs:
   tag-release:
-    permissions:
-      contents: write
+    environment: main
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
+          token: "${{ secrets.GH_RELEASE_TOKEN }}"
           fetch-depth: 0
 
       - name: Configure Git
@@ -28,8 +26,16 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install hatch
-        run: pip install hatch
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
 
-      - name: Tag new version
-        run: .github/release.py tag-release
+      - name: Install hatch
+        run: pip install hatch pyyaml
+
+      - name: Tag release
+        run: |
+          .github/release.py tag-release
+
+      - name: Tag helm releases
+        run: |
+          .github/release.py tag-helm-releases
