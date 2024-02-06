@@ -2,7 +2,7 @@
 
 ## Overview
 
-ZFS GPU Feature Discovery for Kubernetes is a companion to [Node Feature Discovery](https://github.com/kubernetes-sigs/node-feature-discovery) to label Nodes with ZFS version, pool and dataset information.
+ZFS Feature Discovery for Kubernetes is a companion to [Node Feature Discovery](https://github.com/kubernetes-sigs/node-feature-discovery) to label Nodes with ZFS version, pool and dataset information.
 
 ## Status Version
 
