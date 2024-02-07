@@ -2,6 +2,21 @@ apiVersion: v1
 entries:
   zfs-feature-discovery:
   - apiVersion: v2
+    created: "2024-02-07T09:11:48.269205495Z"
+    dependencies:
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 2.x.x
+    description: A Helm chart for ZFS discovery on Kubernetes
+    digest: 5f2ff9005bb76dcc2be35bb8bbdcad108447a77419e28af12d5e6526c89978c1
+    home: https://github.com/danielkza/zfs-feature-discovery
+    kubeVersion: '>= 1.26.0-0'
+    name: zfs-feature-discovery
+    type: application
+    urls:
+    - https://github.com/danielkza/zfs-feature-discovery/releases/download/zfs-feature-discovery-0.0.2/zfs-feature-discovery-0.0.2.tgz
+    version: 0.0.2
+  - apiVersion: v2
     created: "2024-02-06T20:18:26.228615023Z"
     dependencies:
     - name: common
@@ -16,4 +31,4 @@ entries:
     urls:
     - https://github.com/danielkza/zfs-feature-discovery/releases/download/zfs-feature-discovery-0.0.1/zfs-feature-discovery-0.0.1.tgz
     version: 0.0.1
-generated: "2024-02-06T20:18:26.228624561Z"
+generated: "2024-02-07T09:11:48.269217658Z"
