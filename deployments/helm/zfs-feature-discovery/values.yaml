@@ -21,7 +21,7 @@ global:
 image:
   registry: ghcr.io
   repository: danielkza/zfs-feature-discovery
-  tag: "0.1.0"
+  tag: "0.0.1"
   digest: ""
   ## Specify a imagePullPolicy
   ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
@@ -58,8 +58,8 @@ zfsDiscovery:
   zfs:
     ## @param zfsDiscovery.zfs.hostBin Path *from the host* to zfs binary.
     ##
-    hostBin: /usr/sbin/zfs
     ## @param zfsDiscovery.zfs.command Path *in the container* to zfs binary. Don't change unless you have a good reason to.
+    hostBin: /usr/sbin/zfs
     ##
     command: /usr/local/bin/host-zfs
     ## @param zfsDiscovery.zfs.props Dataset properties to generate labels for. This is additive by default. Use "-some_prop" (or "-all") to remove pre-included properties.

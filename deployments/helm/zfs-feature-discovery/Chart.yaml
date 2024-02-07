@@ -2,7 +2,7 @@ apiVersion: v2
 name: zfs-feature-discovery
 type: application
 description: A Helm chart for ZFS discovery on Kubernetes
-version: "0.0.2"
+version: "0.0.3"
 kubeVersion: ">= 1.26.0-0"
 home: https://github.com/danielkza/zfs-feature-discovery
 dependencies:

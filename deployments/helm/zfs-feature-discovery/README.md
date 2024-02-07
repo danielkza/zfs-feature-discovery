@@ -28,7 +28,7 @@ helm install zfs-feature-discovery zfs-feature-discovery/zfs-feature-discovery -
 | `global.imagePullSecrets` | Global Docker registry secret names as an array                                                                       | `[]`                                      |
 | `image.registry`          | zfs-feature-discovery image registry                                                                                  | `ghcr.io`                                 |
 | `image.repository`        | zfs-feature-discovery image repository                                                                                | `ghcr.io/danielkza/zfs-feature-discovery` |
-| `image.tag`               | zfs-feature-discovery Image tag (immutable tags are recommended)                                                      | `0.1.0`                                   |
+| `image.tag`               | zfs-feature-discovery Image tag (immutable tags are recommended)                                                      | `0.0.1`                                   |
 | `image.digest`            | zfs-feature-discovery image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag | `""`                                      |
 | `image.pullPolicy`        | zfs-feature-discovery image pull policy                                                                               | `IfNotPresent`                            |
 | `image.pullSecrets`       | zfs-feature-discovery image pull secrets                                                                              | `[]`                                      |
