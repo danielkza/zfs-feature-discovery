@@ -1,8 +1,11 @@
 import stat
+from datetime import UTC, datetime
+from typing import AsyncIterator
 
 import aiofiles
 import aiofiles.os
 import pytest
+import pytest_asyncio
 from pytest import TempPathFactory
 
 from zfs_feature_discovery.features import FeatureManager
@@ -12,13 +15,29 @@ from zfs_feature_discovery.zpool import ZpoolManager
 from .conftest import CommandMocker, read_all_labels
 
 
-@pytest.fixture(scope="function")
-def feature_manager(
+@pytest.fixture
+def reference_time() -> datetime:
+    return datetime(2024, 2, 7, 10, 42, 8, 52969, tzinfo=UTC)
+
+
+@pytest.fixture
+def expiry_time() -> datetime:
+    return datetime(2024, 2, 7, 11, 42, 8, 52969, tzinfo=UTC)
+
+
+@pytest.fixture
+def expiry_time_s() -> str:
+    return "2024-02-07T11:42:08.052969Z"
+
+
+@pytest_asyncio.fixture
+async def feature_manager(
     tmp_path_factory: TempPathFactory,
     zpool_test_props: frozenset[str],
     zfs_dataset_test_props: frozenset[str],
     zfs_globals: ZfsGlobals,
-) -> FeatureManager:
+    reference_time: datetime,
+) -> AsyncIterator[FeatureManager]:
     fm = FeatureManager(
         feature_dir=tmp_path_factory.mktemp("features-"),
         zpool_props=zpool_test_props,
@@ -29,7 +48,9 @@ def feature_manager(
         global_label_format="zfs-global.{property_name}",
         zfs_globals=zfs_globals,
     )
-    return fm
+    async with fm:
+        async with fm.with_reference_time(reference_time):
+            yield fm
 
 
 @pytest.mark.asyncio
@@ -37,10 +58,8 @@ def feature_manager(
 async def test_zpool_write_features(
     feature_manager: FeatureManager, zpool: ZpoolManager
 ) -> None:
-    async with feature_manager:
-        feature_manager.register_zpool(zpool)
-
-        await feature_manager.refresh_all_zpools()
+    feature_manager.register_zpool(zpool)
+    await feature_manager.refresh_all_zpools()
 
     all_labels = await read_all_labels(feature_manager.feature_dir)
     assert all_labels == {
@@ -57,10 +76,8 @@ async def test_zpool_write_features(
 async def test_zfs_dataset_write_features(
     feature_manager: FeatureManager, zpool: ZpoolManager
 ) -> None:
-    async with feature_manager:
-        feature_manager.register_zpool(zpool)
-
-        await feature_manager.refresh_zpool_datasets(zpool)
+    feature_manager.register_zpool(zpool)
+    await feature_manager.refresh_zpool_datasets(zpool)
 
     all_labels = await read_all_labels(feature_manager.feature_dir)
     assert all_labels == {
@@ -91,10 +108,8 @@ async def test_zfs_dataset_write_features(
 async def test_zpool_no_datasets_write_features(
     feature_manager: FeatureManager, zpool: ZpoolManager
 ) -> None:
-    async with feature_manager:
-        feature_manager.register_zpool(zpool)
-
-        await feature_manager.refresh_all_zpools()
+    feature_manager.register_zpool(zpool)
+    await feature_manager.refresh_all_zpools()
 
     all_labels = await read_all_labels(feature_manager.feature_dir)
     assert all_labels == {
@@ -129,22 +144,20 @@ rubbish=rubbish
     all_labels = await read_all_labels(feature_manager.feature_dir)
     assert all_labels == {"rubbish": "rubbish"}
 
-    async with feature_manager:
-        feature_manager.register_zpool(zpool)
+    feature_manager.register_zpool(zpool)
+    await feature_manager.refresh()
 
-        await feature_manager.refresh()
-
-        all_labels = await read_all_labels(feature_manager.feature_dir)
-        assert all_labels == {
-            "me.danielkza.io/zpool.rpool.readonly": "off",
-            "me.danielkza.io/zpool.rpool.size": "944892805120",
-            "me.danielkza.io/zpool.rpool.health": "ONLINE",
-            "me.danielkza.io/zpool.rpool.guid": "2706753758230323468",
-            "me.danielkza.io/zpool.rpool.feature_async_destroy": "enabled",
-            "me.danielkza.io/zfs-global.ver": "2.2.2-1",
-            "me.danielkza.io/zfs-global.kver": "2.2.2-1",
-            "me.danielkza.io/zfs-global.hostid": "00fac711",
-        }
+    all_labels = await read_all_labels(feature_manager.feature_dir)
+    assert all_labels == {
+        "me.danielkza.io/zpool.rpool.readonly": "off",
+        "me.danielkza.io/zpool.rpool.size": "944892805120",
+        "me.danielkza.io/zpool.rpool.health": "ONLINE",
+        "me.danielkza.io/zpool.rpool.guid": "2706753758230323468",
+        "me.danielkza.io/zpool.rpool.feature_async_destroy": "enabled",
+        "me.danielkza.io/zfs-global.ver": "2.2.2-1",
+        "me.danielkza.io/zfs-global.kver": "2.2.2-1",
+        "me.danielkza.io/zfs-global.hostid": "00fac711",
+    }
 
 
 @pytest.mark.asyncio
@@ -154,20 +167,42 @@ rubbish=rubbish
 async def test_features_file_mode(
     feature_manager: FeatureManager, zpool: ZpoolManager
 ) -> None:
-    async with feature_manager:
-        feature_manager.register_zpool(zpool)
+    feature_manager.register_zpool(zpool)
+    await feature_manager.refresh()
 
-        await feature_manager.refresh()
+    found = False
+    for entry in await aiofiles.os.scandir(feature_manager.feature_dir):
+        found = True
 
-        found = False
-        for entry in await aiofiles.os.scandir(feature_manager.feature_dir):
-            found = True
+        file_stat = await aiofiles.os.stat(entry)
+        file_mode = stat.S_IMODE(file_stat.st_mode)
+        assert file_mode == 0o0644, f"File {entry.path} should have mode 0644"
 
-            file_stat = await aiofiles.os.stat(entry)
-            file_mode = stat.S_IMODE(file_stat.st_mode)
-            assert file_mode == 0o0644, f"File {entry.path} should have mode 0644"
+    assert found, "FeatureManager should generate files"
 
-        assert found, "FeatureManager should generate files"
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("mock_zpool_properties")
+@pytest.mark.usefixtures("mock_zfs_global_properties")
+@pytest.mark.parametrize("zpool_datasets", [[]])
+async def test_features_expiry(
+    feature_manager: FeatureManager,
+    zpool: ZpoolManager,
+    expiry_time_s: str,
+) -> None:
+    feature_manager.register_zpool(zpool)
+    await feature_manager.refresh()
+
+    found = False
+    for entry in await aiofiles.os.scandir(feature_manager.feature_dir):
+        found = True
+
+        async with aiofiles.open(entry) as f:
+            lines = await f.readlines()
+
+        assert f"# +expiry-time={expiry_time_s}\n" in lines
+
+    assert found, "FeatureManager should generate files"
 
 
 @pytest.mark.asyncio
@@ -190,10 +225,8 @@ async def test_zfs_missing(
         exit_code=127,
     )
 
-    async with feature_manager:
-        feature_manager.register_zpool(zpool)
-
-        await feature_manager.refresh()
+    feature_manager.register_zpool(zpool)
+    await feature_manager.refresh()
 
     all_labels = await read_all_labels(feature_manager.feature_dir)
     assert all_labels == {
@@ -206,3 +239,17 @@ async def test_zfs_missing(
         "me.danielkza.io/zfs-global.kver": "",
         "me.danielkza.io/zfs-global.hostid": "",
     }
+
+
+@pytest.mark.asyncio
+async def test_get_expiry_reference_time(
+    feature_manager: FeatureManager,
+    expiry_time: datetime,
+) -> None:
+    assert feature_manager.get_expiry() == expiry_time
+
+
+def test_format_expiry(
+    feature_manager: FeatureManager, expiry_time: datetime, expiry_time_s: str
+) -> None:
+    assert feature_manager.format_expiry(expiry_time) == expiry_time_s
